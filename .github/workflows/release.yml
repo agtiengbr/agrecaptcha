@@ -71,9 +71,40 @@ jobs:
           MODULE="${{ steps.version.outputs.module }}"
           VERSION="${{ steps.version.outputs.version }}"
           ARCHIVE="dist/${MODULE}-${VERSION}.zip"
+          BUILD_DIR="$(mktemp -d)"
 
           mkdir -p dist
-          git archive --format=zip --prefix="${MODULE}/" --output="${ARCHIVE}" HEAD
+
+          if [ -f composer.json ]; then
+            composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+          fi
+
+          rsync -a ./ "${BUILD_DIR}/${MODULE}/" \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude "dist/" \
+            --exclude ".gitignore" \
+            --exclude ".gitattributes" \
+            --exclude "node_modules/" \
+            --exclude "logs/*.log" \
+            --exclude "logs/*.txt"
+
+          export MODULE ARCHIVE BUILD_DIR
+          python3 - <<'PYZIP'
+          import os
+          from pathlib import Path
+          from zipfile import ZIP_DEFLATED, ZipFile
+
+          module = os.environ["MODULE"]
+          build_dir = Path(os.environ["BUILD_DIR"])
+          archive = Path(os.environ["GITHUB_WORKSPACE"]) / os.environ["ARCHIVE"]
+          source = build_dir / module
+
+          with ZipFile(archive, "w", ZIP_DEFLATED) as zip_file:
+              for path in sorted(source.rglob("*")):
+                  if path.is_file():
+                      zip_file.write(path, Path(module) / path.relative_to(source))
+          PYZIP
 
           echo "Archive contents (first 30 entries):"
           unzip -l "${ARCHIVE}" | head -n 35
@@ -83,9 +114,15 @@ jobs:
             exit 1
           fi
 
+          if [ -f composer.json ] && grep -R "vendor/autoload.php" --include='*.php' --exclude-dir=vendor . >/dev/null; then
+            if ! unzip -l "${ARCHIVE}" | grep -q "${MODULE}/vendor/autoload.php"; then
+              echo "Invalid archive: missing ${MODULE}/vendor/autoload.php"
+              exit 1
+            fi
+          fi
+
           echo "archive=${ARCHIVE}" >> "$GITHUB_ENV"
           echo "Built ${ARCHIVE} ($(du -h "${ARCHIVE}" | cut -f1))"
-
       - name: Create GitHub Release
         if: steps.check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
