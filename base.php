@@ -10,6 +10,7 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
         'displayHeader',
         'ActionBeforeSubmitAccount',
         'displayCustomerAccountForm',
+        'actionDispatcher',
         'actionValidateFromCustomer',
         'actionValidateSendRenewPasswordLink'
     ];
@@ -17,7 +18,7 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
     public function __construct()
     {
         $this->name                   = 'agrecaptcha';
-        $this->version                = '1.0.8';
+        $this->version                = '1.0.9';
         $this->bootstrap              = true;
         $this->author                 = 'AGTI';
         $this->need_instance          = 1;
@@ -35,6 +36,7 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
             !parent::install() ||
             !$this->registerHook('displayBeforeContactFormSubmitButton')||
             !$this->registerHook('displayHeader')||
+            !$this->registerHook('actionDispatcher')||
             !$this->registerHook('ActionBeforeSubmitAccount')||
             !$this->registerHook('displayCustomerAccountForm')||
             !$this->registerHook('actionValidateFromCustomer')||
@@ -267,5 +269,36 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
         $this->context->controller->addJs(array(
             _PS_MODULE_DIR_ . $this->name . '/views/js/renderRecaptcha.js'
         ));
+
+        if ($this->context->controller->php_self === 'contact') {
+            Media::addJsDef([
+                'agrecaptcha' => [
+                    'data' => [
+                        'tplRecaptcha' => $this->renderWidget('displayContactContent'),
+                    ],
+                ],
+            ]);
+        }
+    }
+
+    public function hookActionDispatcher($params)
+    {
+        if (!$this->active || !Tools::isSubmit('submitMessage')) {
+            return;
+        }
+
+        $controllerClass = isset($params['controller_class']) ? (string) $params['controller_class'] : '';
+        if (stripos($controllerClass, 'ContactController') === false) {
+            return;
+        }
+
+        $recaptcha = $this->verifyRecaptcha(Tools::getValue('g-recaptcha-response'));
+        if (!$recaptcha || empty($recaptcha->success)) {
+            $this->context->controller->errors[] = $this->trans(
+                'Recaptcha invalido.',
+                [],
+                'Shop.Notifications.Error'
+            );
+        }
     }
 }

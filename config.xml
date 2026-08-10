@@ -2,7 +2,7 @@
 <module>
     <name>agrecaptcha</name>
     <displayName><![CDATA[Recaptcha]]></displayName>
-    <version><![CDATA[1.0.8]]></version>
+    <version><![CDATA[1.0.9]]></version>
     <description><![CDATA[Adiciona a verificação antirobô do Google no cadastro do cliente na sua loja.]]></description>
     <author><![CDATA[AGTI]]></author>
     <tab><![CDATA[]]></tab>
