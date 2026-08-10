@@ -17,11 +17,11 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
     public function __construct()
     {
         $this->name                   = 'agrecaptcha';
-        $this->version                = '1.0.7';
+        $this->version                = '1.0.8';
         $this->bootstrap              = true;
         $this->author                 = 'AGTI';
         $this->need_instance          = 1;
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '8.99');
+        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '9.99');
         parent::__construct();
 
         $this->displayName = 'Recaptcha';
