@@ -18,7 +18,7 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
     public function __construct()
     {
         $this->name                   = 'agrecaptcha';
-        $this->version                = '1.0.9';
+        $this->version                = '1.1.0';
         $this->bootstrap              = true;
         $this->author                 = 'AGTI';
         $this->need_instance          = 1;
@@ -45,7 +45,32 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
         ) {
             return false;
         }
+
+        $this->addGroupPermissions();
+
         return true;
+    }
+
+    private function addGroupPermissions()
+    {
+        $shopId = (int) $this->context->shop->id;
+        $groups = Db::getInstance()->executeS('SELECT id_group FROM ' . _DB_PREFIX_ . 'group');
+
+        foreach ($groups as $g) {
+            $idGroup = (int) $g['id_group'];
+            $exists = (bool) Db::getInstance()->getValue(
+                'SELECT COUNT(*) FROM ' . _DB_PREFIX_ . 'module_group '
+                . 'WHERE id_module = ' . (int) $this->id
+                . ' AND id_shop = ' . $shopId
+                . ' AND id_group = ' . $idGroup
+            );
+            if (!$exists) {
+                Db::getInstance()->execute(
+                    'INSERT INTO ' . _DB_PREFIX_ . 'module_group (id_module, id_shop, id_group) '
+                    . 'VALUES (' . (int) $this->id . ', ' . $shopId . ', ' . $idGroup . ')'
+                );
+            }
+        }
     }
 
       // hook criado para esse modulo em controllers/front/PasswordController.php
@@ -265,10 +290,16 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
 
     public function hookDisplayHeader()
     {
-        $this->context->controller->addCss($this->_path . 'views/css/agrecaptcha.css');        
-        $this->context->controller->addJs(array(
-            _PS_MODULE_DIR_ . $this->name . '/views/js/renderRecaptcha.js'
-        ));
+        $this->context->controller->registerStylesheet(
+            'module-agrecaptcha-css',
+            'modules/' . $this->name . '/views/css/agrecaptcha.css',
+            ['media' => 'all', 'priority' => 100]
+        );
+        $this->context->controller->registerJavascript(
+            'module-agrecaptcha-js',
+            'modules/' . $this->name . '/views/js/renderRecaptcha.js',
+            ['position' => 'bottom', 'priority' => 100]
+        );
 
         if ($this->context->controller->php_self === 'contact') {
             Media::addJsDef([
