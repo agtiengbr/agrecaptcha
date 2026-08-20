@@ -18,7 +18,7 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
     public function __construct()
     {
         $this->name                   = 'agrecaptcha';
-        $this->version                = '1.0.9';
+        $this->version                = '1.1.0';
         $this->bootstrap              = true;
         $this->author                 = 'AGTI';
         $this->need_instance          = 1;
