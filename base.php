@@ -18,7 +18,7 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
     public function __construct()
     {
         $this->name                   = 'agrecaptcha';
-        $this->version                = '1.1.0';
+        $this->version                = '1.1.1';
         $this->bootstrap              = true;
         $this->author                 = 'AGTI';
         $this->need_instance          = 1;
@@ -275,6 +275,16 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
                 'agrecaptcha' => [
                     'data' => [
                         'tplRecaptcha' => $this->renderWidget('displayContactContent'),
+                    ],
+                ],
+            ]);
+        }
+
+        if ($this->context->controller->php_self === 'password') {
+            Media::addJsDef([
+                'agrecaptcha' => [
+                    'data' => [
+                        'tplRecaptcha' => $this->renderWidget('displayPassword'),
                     ],
                 ],
             ]);

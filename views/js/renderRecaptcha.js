@@ -6,6 +6,7 @@ $(document).ready(function() {
     var tpl = agrecaptcha.data.tplRecaptcha;
     var customerForm = $("#customer-form");
     var contactForm = $("form[action*='/contato'], form[action*='controller=contact']").first();
+    var passwordForm = $("form.forgotten-password, form[action*='password']").first();
 
     if (customerForm.length && !customerForm.find('.g-recaptcha').length) {
         customerForm.find('footer, .form-footer').first().before(tpl);
@@ -13,5 +14,9 @@ $(document).ready(function() {
 
     if (contactForm.length && !contactForm.find('.g-recaptcha').length) {
         contactForm.find('footer, .agti-contact-form__footer').first().before(tpl);
+    }
+
+    if (passwordForm.length && !passwordForm.find('.g-recaptcha').length) {
+        passwordForm.find('#send-reset-link, button[name="submit"]').first().before(tpl);
     }
 });
