@@ -17,6 +17,17 @@ $(document).ready(function() {
     }
 
     if (passwordForm.length && !passwordForm.find('.g-recaptcha').length) {
-        passwordForm.find('#send-reset-link, button[name="submit"]').first().before(tpl);
+        var passwordFields = passwordForm.find('.center-email-fields').first();
+
+        passwordFields.after(tpl);
+
+        var passwordCaptcha = passwordFields.nextAll('.g-recaptcha').first();
+        if (passwordCaptcha.length) {
+            passwordCaptcha.wrap('<div class="agrecaptcha-password-captcha"></div>');
+
+            var passwordActions = $('<div class="agrecaptcha-password-actions"></div>');
+            passwordFields.find('button[name="submit"]').appendTo(passwordActions);
+            passwordCaptcha.parent().after(passwordActions);
+        }
     }
 });

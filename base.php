@@ -18,7 +18,7 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
     public function __construct()
     {
         $this->name                   = 'agrecaptcha';
-        $this->version                = '1.1.1';
+        $this->version                = '1.1.2';
         $this->bootstrap              = true;
         $this->author                 = 'AGTI';
         $this->need_instance          = 1;
@@ -169,10 +169,26 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $bodyReq);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->getConnectTimeout());
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->getRequestTimeout());
 
         $result = curl_exec($ch);
 
         return json_decode($result);
+    }
+
+    private function getConnectTimeout()
+    {
+        $timeout = (int) Configuration::get('RECAPTCHA_CONNECT_TIMEOUT');
+
+        return $timeout > 0 ? $timeout : 5;
+    }
+
+    private function getRequestTimeout()
+    {
+        $timeout = (int) Configuration::get('RECAPTCHA_TIMEOUT');
+
+        return $timeout > 0 ? $timeout : 10;
     }
 
     
@@ -184,6 +200,11 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
             Configuration::updateValue('RECAPTCHA_PUBLIC_KEY', Tools::getValue('RECAPTCHA_PUBLIC_KEY'));
             Configuration::updateValue('RECAPTCHA_PRIVATE_KEY', Tools::getValue('RECAPTCHA_PRIVATE_KEY'));
             Configuration::updateValue('RECAPTCHA_CREATE_CUSTOMER', Tools::getValue('RECAPTCHA_CREATE_CUSTOMER'));
+        }
+
+        if (Tools::isSubmit('recaptcha-advanced-config')) {
+            Configuration::updateValue('RECAPTCHA_CONNECT_TIMEOUT', $this->getPostedTimeout('RECAPTCHA_CONNECT_TIMEOUT', 5));
+            Configuration::updateValue('RECAPTCHA_TIMEOUT', $this->getPostedTimeout('RECAPTCHA_TIMEOUT', 10));
         }
        
         $formConfig = [
@@ -249,8 +270,64 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
         $helper->fields_value['RECAPTCHA_PUBLIC_KEY'] = Configuration::get('RECAPTCHA_PUBLIC_KEY');
         $helper->fields_value['RECAPTCHA_PRIVATE_KEY'] = Configuration::get('RECAPTCHA_PRIVATE_KEY');
         $helper->fields_value['RECAPTCHA_CREATE_CUSTOMER'] = Configuration::get('RECAPTCHA_CREATE_CUSTOMER');
-        
-        return $helper->generateForm([$formConfig]);
+
+        $advancedForm = [
+            'form' => [
+                'legend' => [
+                    'title' => $this->l('Configurações avançadas'),
+                ],
+                'description' => $this->l('Ajuste quanto tempo a loja deve aguardar o serviço de proteção do Google. Os valores são contados em segundos.'),
+                'input' => [
+                    [
+                        'type' => 'text',
+                        'label' => $this->l('Tempo para iniciar a conexão'),
+                        'name' => 'RECAPTCHA_CONNECT_TIMEOUT',
+                        'class' => 'center',
+                        'col' => 2,
+                        'suffix' => $this->l('segundos'),
+                        'desc' => $this->l('Tempo máximo para conseguir contato com o Google. Recomendado: 5 segundos.'),
+                    ],
+                    [
+                        'type' => 'text',
+                        'label' => $this->l('Tempo máximo da verificação'),
+                        'name' => 'RECAPTCHA_TIMEOUT',
+                        'class' => 'center',
+                        'col' => 2,
+                        'suffix' => $this->l('segundos'),
+                        'desc' => $this->l('Tempo máximo para receber a resposta do Google. Recomendado: 10 segundos.'),
+                    ],
+                ],
+                'submit' => [
+                    'title' => $this->l('Salvar configurações avançadas'),
+                    'name' => 'recaptcha-advanced-config',
+                    'class' => 'btn btn-default pull-right',
+                ],
+            ],
+        ];
+
+        $helper->fields_value['RECAPTCHA_CONNECT_TIMEOUT'] = $this->getConnectTimeout();
+        $helper->fields_value['RECAPTCHA_TIMEOUT'] = $this->getRequestTimeout();
+
+        $generalForm = $helper->generateForm([$formConfig]);
+        $advancedFormHtml = $helper->generateForm([$advancedForm]);
+
+        return '<ul class="nav nav-tabs" role="tablist">'
+            . '<li class="active"><a href="#agrecaptcha-general" role="tab" data-toggle="tab">'
+            . $this->l('Configurações gerais') . '</a></li>'
+            . '<li><a href="#agrecaptcha-advanced" role="tab" data-toggle="tab">'
+            . $this->l('Configurações avançadas') . '</a></li>'
+            . '</ul>'
+            . '<div class="tab-content">'
+            . '<div class="tab-pane active" id="agrecaptcha-general">' . $generalForm . '</div>'
+            . '<div class="tab-pane" id="agrecaptcha-advanced">' . $advancedFormHtml . '</div>'
+            . '</div>';
+    }
+
+    private function getPostedTimeout($name, $default)
+    {
+        $timeout = (int) Tools::getValue($name, $default);
+
+        return $timeout > 0 ? min($timeout, 300) : $default;
     }
 
     public function renderWidget($hookName =null, array $configuration = [])
