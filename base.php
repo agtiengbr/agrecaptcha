@@ -18,7 +18,7 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
     public function __construct()
     {
         $this->name                   = 'agrecaptcha';
-        $this->version                = '1.1.2';
+        $this->version                = '1.1.3';
         $this->bootstrap              = true;
         $this->author                 = 'AGTI';
         $this->need_instance          = 1;
@@ -370,12 +370,12 @@ class BaseAgRecaptcha extends AgModule implements WidgetInterface{
         $this->context->controller->registerStylesheet(
             'module-agrecaptcha-css',
             'modules/' . $this->name . '/views/css/agrecaptcha.css',
-            ['media' => 'all', 'priority' => 100]
+            ['media' => 'all', 'priority' => 100, 'version' => $this->version]
         );
         $this->context->controller->registerJavascript(
             'module-agrecaptcha-js',
             'modules/' . $this->name . '/views/js/renderRecaptcha.js',
-            ['position' => 'bottom', 'priority' => 100]
+            ['position' => 'bottom', 'priority' => 100, 'version' => $this->version]
         );
 
         if ($this->context->controller->php_self === 'contact') {
